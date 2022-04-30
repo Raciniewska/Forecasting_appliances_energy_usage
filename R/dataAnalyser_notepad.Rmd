@@ -1,0 +1,84 @@
+
+TYP DANYCH
+
+```{r}
+data <- read.csv(file = "../data/energydata_complete.csv", stringsAsFactors = FALSE)
+data<-data[order(data$date),]
+str(data)
+```
+
+OGÓLNE STATYSTYKI DANYCH
+
+```{r}
+#wyliczenia dla kolumn numerycznych
+row_names <- colnames(data[,2:29])
+mean <- apply(data[,2:29],2, mean)
+median <-apply(data[,2:29],2,median)
+min <-apply(data[,2:29],2,min)
+max<-apply(data[,2:29],2,max)
+std<-apply(data[,2:29],2,sd)
+
+number_data.df <- data.frame(row_names, mean, median, min, max, std)
+number_data.df[,2:6]<-round(number_data.df[,2:6], 2)
+number_data.df[order(number_data.df$row_names),]
+
+# wyliczenia dla date:
+mean_date <-mean.Date(as.Date(data[,1:1], format=c("%Y-%m-%d"))) 
+median_date <-median(data[,1:1])
+min_date<- min(as.Date(data[,1:1], format=c("%Y-%m-%d")))
+max_date<- max(as.Date(data[,1:1], format=c("%Y-%m-%d")))
+date_numeric <-as.numeric(as.POSIXct(data[,1:1], format=c("%Y-%m-%d")))
+std_date_days<- sd(date_numeric, na.rm = TRUE)/60/60/24
+
+date_data.df <- data.frame("date", mean_date, median_date, min_date, max_date, std_date_days)
+#date_data.df[,2:6]<-round(number_data.df[,2:6], 2)
+date_data.df
+
+```
+WARTOŚCI BRAKUJĄCE
+
+```{r}
+# w ilu kolumnach brakuje danych
+which(is.na(data))
+# ile jest łącznie brakujących danych
+sum(is.na(data))
+```
+
+WYKRESY ZMIENNYCH CELU W CZASIE
+
+```{r}
+data$date<-as.Date(data$date, format=c("%Y-%m-%d"))
+plot(data$date,data$Appliances,type="l", col=3, main="Power usage from Appliances in time")
+plot(data$date,data$lights,type="l", col=3, main="Power usage from lights in time")
+
+```
+
+Histogram zmiennych
+```{r}
+install.packages("Hmisc")
+library(Hmisc)
+```
+
+```{r}
+data<-data[,order(names(data))]
+data_numeric <- subset( data, select = -date )
+hist.data.frame(data_numeric[,1:14])
+hist.data.frame(data_numeric[,15:28])
+```
+
+Quantile - Quantile plot
+
+```{r}
+
+
+for (i in 1:ncol(data_numeric[,1: ncol(data_numeric) - 1 ])){  
+qqnorm(data_numeric[, i], main = names(data_numeric[i]), col=3)
+   qqline(data_numeric[, i])
+}
+```
+Wykresy korelacji
+
+```{r}
+
+```
+
