@@ -108,3 +108,9 @@ corrplot(res, type = "full", order = "hclust",
          tl.col = "black")
 ```
 
+Save all numeric data to the new file
+
+```{r}
+write.csv(data_numeric,'../data/energy_data_after_analysis.csv')
+```
+
