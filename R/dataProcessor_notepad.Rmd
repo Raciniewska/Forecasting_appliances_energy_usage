@@ -17,6 +17,7 @@ Uzupełniamy zerami ponieważ danych brakujacych jest tylko 6.
 which(is.na(data))
 # ile jest łącznie brakujących danych
 sum(is.na(data))
+mising<-data[is.na(data),]
 data[is.na(data)] = 0
 ```
 
@@ -87,17 +88,12 @@ atributes = scale(atributes)
 atributes$logAppliances = data$logAppliances
 install.packages("Boruta")
 library(Boruta)
-
 memory.limit(size=5000)
-
 set.seed(42)
 boruta.train <- Boruta(logAppliances~., data = atributes, doTrace = 2)
-
 print(boruta.train)
-
 final.boruta <- TentativeRoughFix(boruta.train)
 print(final.boruta)
-
 plot(final.train, xlab = "", xaxt = "n")
 lz<-lapply(1:ncol(final.train$ImpHistory),function(i)
 final.train$ImpHistory[is.finite(final.train$ImpHistory[,i]),i])
