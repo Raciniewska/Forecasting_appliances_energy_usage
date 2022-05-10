@@ -71,7 +71,7 @@ Quantile - Quantile plot
 ```{r}
 
 
-for (i in 1:ncol(data_numeric[,1: ncol(data_numeric) - 1 ])){  
+for (i in 1:ncol(data_numeric[,1: ncol(data_numeric) ])){  
 qqnorm(data_numeric[, i], main = names(data_numeric[i]), col=3)
    qqline(data_numeric[, i])
 }
@@ -90,9 +90,9 @@ data_numeric['hour']<-hour
 #pory dnia
 #22:00 - 6:00 noc 1
 #6:00-10:00 rano 2
-#10:00-12:00 przedpolodnie 3
-#12:00 - 14:00 wczesne popolodnie 4
-#14:00 -18:00 popolodnie 5
+#10:00-12:00 przedpoludnie 3
+#12:00 - 14:00 wczesne popoludnie 4
+#14:00 -18:00 popoludnie 5
 #18:00 - 22:00 -wieczor 0
 time_of_day <- rep(0,length(data$date))
 time_of_day[(hour>=22&hour<=24)|(hour>=0&hour<6)]=1
