@@ -17,6 +17,7 @@ Uzupełniamy zerami ponieważ danych brakujacych jest tylko 6.
 which(is.na(data))
 # ile jest łącznie brakujących danych
 sum(is.na(data))
+mising<-data[is.na(data),]
 data[is.na(data)] = 0
 ```
 
@@ -83,7 +84,6 @@ res[abs(res$logAppliances) > 0.4] # nie istnieja korelacje wieksze od 0.4,
 Analiza korelacji interakcji wskazuje ze nie sa one bardziej wartosciowe od artybutów. Dlatego algorytm boruta wykonujemy na atrybutach bez interakcji.
 
 ```{r}
-
 atributes = scale(atributes)
 atributes = as.data.frame(atributes)
 atributes$logAppliances = data$logAppliances
