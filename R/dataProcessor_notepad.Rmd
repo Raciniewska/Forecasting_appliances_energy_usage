@@ -83,20 +83,22 @@ res[abs(res$logAppliances) > 0.4] # nie istnieja korelacje wieksze od 0.4,
 Analiza korelacji interakcji wskazuje ze nie sa one bardziej wartosciowe od artybutów. Dlatego algorytm boruta wykonujemy na atrybutach bez interakcji.
 
 ```{r}
+
 atributes = scale(atributes)
+atributes = as.data.frame(atributes)
 atributes$logAppliances = data$logAppliances
+atributes = as.data.frame(atributes)
+str(atributes)
 install.packages("Boruta")
 library(Boruta)
-
-memory.limit(size=5000)
 
 set.seed(42)
 boruta.train <- Boruta(logAppliances~., data = atributes, doTrace = 2)
 
 print(boruta.train)
 
-final.boruta <- TentativeRoughFix(boruta.train)
-print(final.boruta)
+final.train <- TentativeRoughFix(boruta.train)
+print(final.train)
 
 plot(final.train, xlab = "", xaxt = "n")
 lz<-lapply(1:ncol(final.train$ImpHistory),function(i)
