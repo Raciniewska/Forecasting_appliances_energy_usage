@@ -4,18 +4,18 @@ TWORZENIE MODELU REGRESJI LINIOWEJ
 Wczytanie danych
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train_y<-train$Appliances
-train_x <- subset(train, select = -c(lights, Appliances) )
+train <- subset(train, select = -c(lights, Appliances) )
 ```
 
 Regrasja liniowa
 
 ```{r}
-# w ilu kolumnach brakuje danych
-which(is.na(train))
-# ile jest łącznie brakujących danych
-sum(is.na(train))
-mising<-train[is.na(train),]
-relation <- lm(Appliances~.,train)
+relation <- lm(logAppliances~.,train)
+relation
+```
+predykcja
+
+```{r}
+
 ```
 
