@@ -4,7 +4,7 @@ TYP DANYCH
 Korzystamy z danych z poprzedniego etapu.
 
 ```{r}
-data <- read.csv(file = "data/energy_data_after_analysis.csv", stringsAsFactors = FALSE)
+data <- read.csv(file = "../data/energy_data_after_analysis.csv", stringsAsFactors = FALSE)
 str(data)
 ```
 
@@ -18,7 +18,8 @@ which(is.na(data))
 # ile jest łącznie brakujących danych
 sum(is.na(data))
 mising<-data[is.na(data),]
-data[is.na(data)] = 0
+data = na.omit(data)
+#data[is.na(data)] = 0
 ```
 
 Mozemy zauwazyc ze atrybuty Appliances, visibility, windspeed, rh_out, t_dewpoint, t9, t3, t4, t5 maja rozklady nie bedace rozkladem normalnym.
@@ -89,7 +90,7 @@ boruta_atributes = as.data.frame(atributes)
 boruta_atributes$logAppliances = data$logAppliances
 boruta_atributes = as.data.frame(boruta_atributes)
 str(boruta_atributes)
-install.packages("Boruta")
+#install.packages("Boruta")
 library(Boruta)
 
 set.seed(42)
@@ -111,5 +112,20 @@ axis(side = 1,las=2,labels = names(Labels), at = 1:ncol(final.train$ImpHistory),
 
 ```{r}
 write.csv(atributes, '../data/energy_data_after_processing.csv')
+```
+
+Split into test and train data sets(80% - 20% split)
+
+```{r}
+dt = sort(sample(nrow(atributes), nrow(atributes)*.8))
+train<-data[dt,]
+test<-data[-dt,]
+```
+
+save test and train
+
+```{r}
+write.csv(train, '../data/energy_data_train.csv')
+write.csv(test, '../data/energy_data_test.csv')
 ```
 
