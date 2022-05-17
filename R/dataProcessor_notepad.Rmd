@@ -117,9 +117,9 @@ write.csv(atributes, '../data/energy_data_after_processing.csv')
 Split into test and train data sets(80% - 20% split)
 
 ```{r}
-dt = sort(sample(nrow(atributes), nrow(atributes)*.8))
-train<-data[dt,]
-test<-data[-dt,]
+dt = sort(sample(nrow(boruta_atributes), nrow(boruta_atributes)*.8))
+train<-boruta_atributes[dt,]
+test<-boruta_atributes[-dt,]
 ```
 
 save test and train
