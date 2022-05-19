@@ -117,9 +117,13 @@ write.csv(atributes, '../data/energy_data_after_processing.csv')
 Split into test and train data sets(80% - 20% split)
 
 ```{r}
-dt = sort(sample(nrow(boruta_atributes), nrow(boruta_atributes)*.8))
-train<-boruta_atributes[dt,]
-test<-boruta_atributes[-dt,]
+library(caret)
+dt = sort(sample(nrow(atributes), nrow(atributes)*.8))
+train<-atributes[dt,]
+test<-atributes[-dt,]
+train_par<-preProcess(train)
+train<-predict(train_par,train)
+test<-predict(train_par,test)
 ```
 
 save test and train

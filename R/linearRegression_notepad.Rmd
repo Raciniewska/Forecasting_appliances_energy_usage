@@ -5,18 +5,16 @@ https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 Wczytanie danych
 ```{r}
 #install.packages("caret")
+#sprawdzic czy w zbiorze testowym i trenigowym mean =0 sd=1
+
 library(caret)
 train<-read.csv("../data/energy_data_train.csv")
+
 train <- subset(train, select = -c(lights) )
 train_attributes <- subset(train, select = -c(logAppliances) )
-pre_proc_val <- preProcess(train_attributes, method = c("center", "scale"))
 test<-read.csv("../data/energy_data_test.csv")
 test_attributes <- subset(test, select = -c(lights, logAppliances) )
 test_y <- subset(test, select = c( logAppliances) )
-
-train_attributes = predict(pre_proc_val, train_attributes)
-
-test_attributes = predict(pre_proc_val, test_attributes)
 logAppliances<-train$logAppliances
 train <- cbind(train_attributes, logAppliances)
 ```
