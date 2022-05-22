@@ -4,10 +4,8 @@ https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 
 Wczytanie danych
 ```{r}
-#install.packages("caret")
 #sprawdzic czy w zbiorze testowym i trenigowym mean =0 sd=1
 
-library(caret)
 train<-read.csv("../data/energy_data_train.csv")
 
 train <- subset(train, select = -c(lights) )
@@ -30,8 +28,10 @@ predykcja
 ```{r}
 prediction<-predict(model1, newdata = test_attributes)
 
-```
-```{r}
+#residual plot
+res = resid(model1)
+plot(train$logAppliances, res, 
+    ylab="Residuals", xlab="Appliances Energy Usage")
 #Step 1 - create the evaluation metrics function
 
 
@@ -43,9 +43,9 @@ eval_metrics = function(model, y, predictions){
     adj_r2 = as.character(round(summary(model)$adj.r.squared, 2))
     print(adj_r2) #Adjusted R-squared
     print(as.character(round(sqrt(sum(resids2)/N), 2))) #RMSE
+    return(round(sqrt(sum(resids2)/N), 2)) #RMSE
 
 }
-
 ```
 
 ```{r}
@@ -57,5 +57,100 @@ eval_metrics(model1, train$logAppliances, predictions)
 # Step 3 - predicting and evaluating the model on test data
 predictions = predict(model1, newdata = test_attributes)
 eval_metrics(model1, test_y, predictions)
+```
+F-test
+https://statisticsbyjim.com/regression/interpret-f-test-overall-significance-regression/
+
+```{r}
+library(corrplot)
+res <- cor( train, use = "complete.obs")
+res[is.na(res)] = 0
+res = as.data.frame(res)
+res<-abs(subset(res, select = c(logAppliances)))
+res_names<-rownames(res)[order(-res)][-1]
+res<-res[order(-res),][-1]
+rsme=list()
+f_stat=list()
+p_val=list()
+first<-0
+for(i in 1:length(res_names)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <- cbind(sub_train_attr, logAppliances)
+    model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+    predictions = predict(model1, newdata = as.data.frame(train[,(res_names)[1:i]]))
+    rsme=append(rsme,eval_metrics(model1, train$logAppliances, predictions))
+    if(first!=0){
+        f_stat<-append(f_stat,anova(prev_model,model1)$F[2])
+        #print(anova(prev_model,model1))
+        p_val<-append(p_val,anova(prev_model,model1)$Pr[2])
+    }
+    prev_model<-model1
+    first<-1
+}
+plot(seq( 1:length(res_names)),rsme)
+print(f_stat)
+plot(seq( 1:(length(res_names)-1)),f_stat)
+plot(seq( 1:(length(res_names)-1)),p_val)
+```
+
+Likelihood Ratio Test (LRT)
+https://finnstats.com/index.php/2021/11/24/likelihood-ratio-test-in-r/
+
+```{r}
+library(corrplot)
+library(lmtest)
+res <- cor( train, use = "complete.obs")
+res[is.na(res)] = 0
+res = as.data.frame(res)
+res<-abs(subset(res, select = c(logAppliances)))
+res_names<-rownames(res)[order(-res)][-1]
+res<-res[order(-res),][-1]
+lrt=list()
+p_val=list()
+first<-0
+for(i in 1:length(res_names)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <- cbind(sub_train_attr, logAppliances)
+    model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+    if(first!=0){
+        print(lrtest(model1, prev_model))
+        p_val<-append(p_val,lrtest(prev_model,model1)$Pr[2])
+        lrt<-append(lrt,lrtest(prev_model,model1)$Chisq[2])
+    }
+    prev_model<-model1
+    first<-1
+}
+print(f_stat)
+plot(seq( 1:(length(res_names)-1)),lrt)
+plot(seq( 1:(length(res_names)-1)),p_val)
+```
+
+Akaike Information Criterion (AIC)
+https://www.scribbr.com/statistics/akaike-information-criterion/
+
+```{r}
+library(corrplot)
+library(Rcpp)
+library(AICcmodavg)
+res <- cor( train, use = "complete.obs")
+res[is.na(res)] = 0
+res = as.data.frame(res)
+res<-abs(subset(res, select = c(logAppliances)))
+res_names<-rownames(res)[order(-res)][-1]
+res<-res[order(-res),][-1]
+models=list()
+for(i in 1:length(res_names)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <- cbind(sub_train_attr, logAppliances)
+    models[[i]] <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+}
+aictab(cand.set = models, modnames =seq( 1:length(res_names)))
+```
+
+Bayes Information Criterion (BIC)
+https://www.statology.org/bic-in-r/
+
+```{r}
+
 ```
 

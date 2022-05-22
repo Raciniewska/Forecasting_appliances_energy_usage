@@ -118,6 +118,7 @@ Split into test and train data sets(80% - 20% split)
 
 ```{r}
 library(caret)
+atributes$logAppliances = data$logAppliances
 dt = sort(sample(nrow(atributes), nrow(atributes)*.8))
 train<-atributes[dt,]
 test<-atributes[-dt,]
