@@ -39,11 +39,11 @@ eval_metrics = function(model, y, predictions){
     resids = y - predictions
     resids2 = resids**2
     N = length(predictions)
-    r2 = as.character(round(summary(model)$r.squared, 2))
-    adj_r2 = as.character(round(summary(model)$adj.r.squared, 2))
+    r2 = as.character(round(summary(model)$r.squared, 5))
+    adj_r2 = as.character(round(summary(model)$adj.r.squared, 5))
     print(adj_r2) #Adjusted R-squared
-    print(as.character(round(sqrt(sum(resids2)/N), 2))) #RMSE
-    return(round(sqrt(sum(resids2)/N), 2)) #RMSE
+    print(as.character(round(sqrt(sum(resids2)/N), 5))) #RMSE
+    return(round(sqrt(sum(resids2)/N), 5)) #RMSE
 
 }
 ```
@@ -60,6 +60,7 @@ eval_metrics(model1, test_y, predictions)
 ```
 F-test
 https://statisticsbyjim.com/regression/interpret-f-test-overall-significance-regression/
+https://bookdown.org/ndphillips/YaRrr/comparing-regression-models-with-anova.html
 
 ```{r}
 library(corrplot)
@@ -87,24 +88,17 @@ for(i in 1:length(res_names)){
     prev_model<-model1
     first<-1
 }
-plot(seq( 1:length(res_names)),rsme)
+plot(seq( 1:length(res_names)),rsme, xlab="models")
 print(f_stat)
-plot(seq( 1:(length(res_names)-1)),f_stat)
-plot(seq( 1:(length(res_names)-1)),p_val)
+plot(seq( 1:(length(res_names)-1)),f_stat, xlab="models")
+plot(seq( 1:(length(res_names)-1)),p_val, xlab="models")
 ```
 
 Likelihood Ratio Test (LRT)
 https://finnstats.com/index.php/2021/11/24/likelihood-ratio-test-in-r/
 
 ```{r}
-library(corrplot)
 library(lmtest)
-res <- cor( train, use = "complete.obs")
-res[is.na(res)] = 0
-res = as.data.frame(res)
-res<-abs(subset(res, select = c(logAppliances)))
-res_names<-rownames(res)[order(-res)][-1]
-res<-res[order(-res),][-1]
 lrt=list()
 p_val=list()
 first<-0
@@ -114,30 +108,23 @@ for(i in 1:length(res_names)){
     model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
     if(first!=0){
         print(lrtest(model1, prev_model))
-        p_val<-append(p_val,lrtest(prev_model,model1)$Pr[2])
-        lrt<-append(lrt,lrtest(prev_model,model1)$Chisq[2])
+        p_val<-append(p_val,lrtest(model1,prev_model)$Pr[2])
+        lrt<-append(lrt,lrtest(model1,prev_model)$Chisq[2])
     }
     prev_model<-model1
     first<-1
 }
 print(f_stat)
-plot(seq( 1:(length(res_names)-1)),lrt)
-plot(seq( 1:(length(res_names)-1)),p_val)
+plot(seq( 1:(length(res_names)-1)),lrt, xlab="models")
+plot(seq( 1:(length(res_names)-1)),p_val, xlab="models")
 ```
 
 Akaike Information Criterion (AIC)
 https://www.scribbr.com/statistics/akaike-information-criterion/
 
 ```{r}
-library(corrplot)
 library(Rcpp)
 library(AICcmodavg)
-res <- cor( train, use = "complete.obs")
-res[is.na(res)] = 0
-res = as.data.frame(res)
-res<-abs(subset(res, select = c(logAppliances)))
-res_names<-rownames(res)[order(-res)][-1]
-res<-res[order(-res),][-1]
 models=list()
 for(i in 1:length(res_names)){
     sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
@@ -151,6 +138,38 @@ Bayes Information Criterion (BIC)
 https://www.statology.org/bic-in-r/
 
 ```{r}
+library(flexmix)
+bics=list()
+for(i in 1:length(res_names)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <- cbind(sub_train_attr, logAppliances)
+    model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+    bics<-append(bics,BIC(model1))
+}
+plot(seq( 1:(length(res_names))),bics, xlab="models")
+```
+model withou T_out
+```{r}
+sub_train_attr <-as.data.frame(cbind(train[,(res_names)[1:4]],train[,(res_names)[6:length(res_names)]]))
+sub_train_attr <- cbind(sub_train_attr, logAppliances)
+model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+predictions = predict(model1, newdata = as.data.frame(cbind(train[,(res_names)[1:4]],train[,(res_names)[6:length(res_names)]])))
+rsme=eval_metrics(model1, train$logAppliances, predictions)
 
+prediction<-predict(model1, newdata = test_attributes)
+
+#residual plot
+res = resid(model1)
+plot(train$logAppliances, res, 
+    ylab="Residuals", xlab="Appliances Energy Usage")
+
+# Step 2 - predicting and evaluating the model on train data
+predictions = predict(model1, newdata = train_attributes)
+eval_metrics(model1, train$logAppliances, predictions)
+
+
+# Step 3 - predicting and evaluating the model on test data
+predictions = predict(model1, newdata = test_attributes)
+eval_metrics(model1, test_y, predictions)
 ```
 
