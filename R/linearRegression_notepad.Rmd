@@ -4,10 +4,7 @@ https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 
 Wczytanie danych
 ```{r}
-#sprawdzic czy w zbiorze testowym i trenigowym mean =0 sd=1
-
 train<-read.csv("../data/energy_data_train.csv")
-
 train <- subset(train, select = -c(lights) )
 train_attributes <- subset(train, select = -c(logAppliances) )
 test<-read.csv("../data/energy_data_test.csv")
@@ -58,11 +55,29 @@ eval_metrics(model1, train$logAppliances, predictions)
 predictions = predict(model1, newdata = test_attributes)
 eval_metrics(model1, test_y, predictions)
 ```
+```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights,RH_6, RH_7, RH_9,RH_out))
+model2 <- lm(logAppliances~.,train,na.action=na.exclude)
+summary(model2)
+prediction<-predict(model2, newdata = test_attributes)
+#residual plot
+res = resid(model2)
+plot(train$logAppliances, res, 
+    ylab="Residuals", xlab="Appliances Energy Usage")
+predictions = predict(model2, newdata = train_attributes)
+eval_metrics(model2, train$logAppliances, predictions)
+predictions = predict(model2, newdata = test_attributes)
+eval_metrics(model2, test_y, predictions)
+```
+
 F-test
 https://statisticsbyjim.com/regression/interpret-f-test-overall-significance-regression/
 https://bookdown.org/ndphillips/YaRrr/comparing-regression-models-with-anova.html
 
 ```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights))
 library(corrplot)
 res <- cor( train, use = "complete.obs")
 res[is.na(res)] = 0
@@ -73,25 +88,29 @@ res<-res[order(-res),][-1]
 rsme=list()
 f_stat=list()
 p_val=list()
-first<-0
+
+sub_train_attr <-as.data.frame(train)
+full_model<- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
+
 for(i in 1:length(res_names)){
-    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <-as.data.frame(train[,(res_names)[-i]])
     sub_train_attr <- cbind(sub_train_attr, logAppliances)
     model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
-    predictions = predict(model1, newdata = as.data.frame(train[,(res_names)[1:i]]))
+    predictions = predict(model1, newdata = as.data.frame(train[,(res_names)[-i]]))
     rsme=append(rsme,eval_metrics(model1, train$logAppliances, predictions))
-    if(first!=0){
-        f_stat<-append(f_stat,anova(prev_model,model1)$F[2])
-        #print(anova(prev_model,model1))
-        p_val<-append(p_val,anova(prev_model,model1)$Pr[2])
-    }
-    prev_model<-model1
-    first<-1
+    f_stat<-append(f_stat,anova(model1,full_model)$F[2])
+    p_val<-append(p_val,anova(model1,full_model)$Pr[2])
+
 }
-plot(seq( 1:length(res_names)),rsme, xlab="models")
+plot(seq( 1:length(res_names)),rsme, xlab="number of predictor excluded from model", pch=19)
 print(f_stat)
-plot(seq( 1:(length(res_names)-1)),f_stat, xlab="models")
-plot(seq( 1:(length(res_names)-1)),p_val, xlab="models")
+plot(seq( 1:(length(res_names))),f_stat, xlab="number of predictor excluded from model", pch=19)
+plot(seq( 1:(length(res_names))),p_val, xlab="number of predictor excluded from model", pch=19)
+
+
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights))
+
 ```
 
 Likelihood Ratio Test (LRT)
@@ -99,24 +118,21 @@ https://finnstats.com/index.php/2021/11/24/likelihood-ratio-test-in-r/
 
 ```{r}
 library(lmtest)
+
 lrt=list()
 p_val=list()
-first<-0
 for(i in 1:length(res_names)){
-    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+    sub_train_attr <-as.data.frame(train[,(res_names)[-i]])
     sub_train_attr <- cbind(sub_train_attr, logAppliances)
     model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
-    if(first!=0){
-        print(lrtest(model1, prev_model))
-        p_val<-append(p_val,lrtest(model1,prev_model)$Pr[2])
-        lrt<-append(lrt,lrtest(model1,prev_model)$Chisq[2])
-    }
-    prev_model<-model1
-    first<-1
+    print(lrtest(full_model, model1))
+    p_val<-append(p_val,lrtest(full_model, model1)$Pr[2])
+    lrt<-append(lrt,lrtest(full_model, model1)$Chisq[2])
+    
 }
 print(f_stat)
-plot(seq( 1:(length(res_names)-1)),lrt, xlab="models")
-plot(seq( 1:(length(res_names)-1)),p_val, xlab="models")
+plot(seq( 1:(length(res_names))),lrt, xlab="number of predictor excluded from model", pch=19)
+plot(seq( 1:(length(res_names))),p_val, xlab="number of predictor excluded from model", pch=19)
 ```
 
 Akaike Information Criterion (AIC)
@@ -125,51 +141,49 @@ https://www.scribbr.com/statistics/akaike-information-criterion/
 ```{r}
 library(Rcpp)
 library(AICcmodavg)
-models=list()
-for(i in 1:length(res_names)){
-    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+indexes=c(2,6,11,13)
+com<-combn(indexes, 1,simplify=FALSE)
+com<-append(com,combn(indexes, 2,simplify=FALSE))
+com<-append(com,combn(indexes, 3,simplify=FALSE))
+com<-append(com,combn(indexes, 4,simplify=FALSE))
+for(i in 1:length(com)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[-unlist(com[i])]])
     sub_train_attr <- cbind(sub_train_attr, logAppliances)
     models[[i]] <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
 }
 aictab(cand.set = models, modnames =seq( 1:length(res_names)))
+
+
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights,RH_6, RH_7, RH_out))
+model2 <- lm(logAppliances~.,train,na.action=na.exclude)
+summary(model2)
+prediction<-predict(model2, newdata = test_attributes)
+#residual plot
+res = resid(model2)
+plot(train$logAppliances, res, 
+    ylab="Residuals", xlab="Appliances Energy Usage")
+predictions = predict(model2, newdata = train_attributes)
+eval_metrics(model2, train$logAppliances, predictions)
+predictions = predict(model2, newdata = test_attributes)
+eval_metrics(model2, test_y, predictions)
 ```
 
 Bayes Information Criterion (BIC)
 https://www.statology.org/bic-in-r/
 
 ```{r}
+train<-read.csv("../data/energy_data_train.csv")
 library(flexmix)
 bics=list()
-for(i in 1:length(res_names)){
-    sub_train_attr <-as.data.frame(train[,(res_names)[1:i]])
+for(i in 1:length(com)){
+    sub_train_attr <-as.data.frame(train[,(res_names)[-unlist(com[i])]])
     sub_train_attr <- cbind(sub_train_attr, logAppliances)
     model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
     bics<-append(bics,BIC(model1))
 }
-plot(seq( 1:(length(res_names))),bics, xlab="models")
+plot(seq( 1:(length(com))),bics, xlab="models no", pch=19)
 ```
-model withou T_out
-```{r}
-sub_train_attr <-as.data.frame(cbind(train[,(res_names)[1:4]],train[,(res_names)[6:length(res_names)]]))
-sub_train_attr <- cbind(sub_train_attr, logAppliances)
-model1 <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
-predictions = predict(model1, newdata = as.data.frame(cbind(train[,(res_names)[1:4]],train[,(res_names)[6:length(res_names)]])))
-rsme=eval_metrics(model1, train$logAppliances, predictions)
-
-prediction<-predict(model1, newdata = test_attributes)
-
-#residual plot
-res = resid(model1)
-plot(train$logAppliances, res, 
-    ylab="Residuals", xlab="Appliances Energy Usage")
-
-# Step 2 - predicting and evaluating the model on train data
-predictions = predict(model1, newdata = train_attributes)
-eval_metrics(model1, train$logAppliances, predictions)
 
 
-# Step 3 - predicting and evaluating the model on test data
-predictions = predict(model1, newdata = test_attributes)
-eval_metrics(model1, test_y, predictions)
-```
 
