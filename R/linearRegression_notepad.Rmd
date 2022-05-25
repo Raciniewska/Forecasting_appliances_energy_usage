@@ -14,7 +14,7 @@ logAppliances<-train$logAppliances
 train <- cbind(train_attributes, logAppliances)
 ```
 
-Regrasja liniowa
+Regresja liniowa
 
 ```{r}
 model1 <- lm(logAppliances~.,train,na.action=na.exclude)
