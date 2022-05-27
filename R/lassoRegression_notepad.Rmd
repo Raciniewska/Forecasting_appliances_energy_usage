@@ -1,0 +1,114 @@
+
+TWORZENIE MODELU REGRESJI LASSO 
+
+Wczytanie danych
+```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights) )
+train_attributes <- subset(train, select = -c(logAppliances) )
+test<-read.csv("../data/energy_data_test.csv")
+test_attributes <- subset(test, select = -c(lights, logAppliances) )
+logAppliances<-train$logAppliances
+train <- cbind(train_attributes, logAppliances)
+```
+
+lasso regression - wszystkie kolumny, wyszukiwanie parametru lambda
+https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
+
+```{r}
+library(glmnet)
+x = as.matrix(train_attributes)
+y_train = train$logAppliances
+x_test = as.matrix(test_attributes)
+y_test = test$logAppliances
+lambdas <- 10^seq(0, -3, by = -.05)
+cv_lasso <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas)
+optimal_lambda <- cv_lasso$lambda.min
+optimal_lambda
+plot(lambdas,cv_lasso$cvm,ylab="Mean-Squared Error",xlab="Lambda",  type="l") 
+lasso_reg = glmnet(x, y_train,  alpha = 1, family = 'gaussian', lambda = optimal_lambda,thresh = 1e-07)
+summary(lasso_reg)
+coef(lasso_reg)
+```
+Ocena wyników modelu
+```{r}
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+return(data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+))}
+
+
+# Prediction and evaluation on train data
+predictions_train <- predict(lasso_reg, s = optimal_lambda, newx = x)
+res<-eval_results(y_train, predictions_train, train)
+print(res)
+
+# Prediction and evaluation on test data
+predictions_test <- predict(lasso_reg, s = optimal_lambda, newx = x_test)
+res<-eval_results(y_test, predictions_test, test)
+print(res)
+```
+thresh find
+
+```{r}
+thresh_vals = list(10^(-10),10^(-9),10^(-8),10^(-7),10^(-6), 10^(-5), 10^(-4), 10^(-3), 10^(-2), 10^(-1), 10^(-0))
+train_rsme=list()
+test_rsme=list()
+test_r2=list()
+train_r2=list()
+for(i in 1:length(thresh_vals)){
+  lasso_reg = glmnet(x, y_train, nlambda = 25, alpha = 0, family = 'gaussian', lambda = optimal_lambda,thresh = thresh_vals[i])
+# Prediction and evaluation on train data
+  predictions_train <- predict(lasso_reg, s = optimal_lambda, newx = x)
+  ret<-eval_results(y_train, predictions_train, train)
+  train_r2=append(train_r2, ret$Rsquare)
+  train_rsme=append(train_rsme, ret$RMSE)
+
+# Prediction and evaluation on test data
+  predictions_test <- predict(lasso_reg, s = optimal_lambda, newx = x_test)
+  ret<-eval_results(y_test, predictions_test, test)
+  test_r2=append(test_r2, ret$Rsquare)
+  test_rsme=append(test_rsme, ret$RMSE)
+}
+plot(seq(-10,0,1) ,train_r2 ,pch=19, xlab="log10(thresh)", type="l")
+plot(seq(-10,0,1) ,test_r2 ,pch=19, xlab="log10(thresh)", type="l")
+plot(seq(-10,0,1) ,test_rsme ,pch=19, xlab="log10(thresh)", type="l")
+plot(seq(-10,0,1) ,train_rsme ,pch=19, xlab="log10(thresh)", type="l")
+```
+Model bez RH_6, RH_7, RH_out
+```{r}
+library(glmnet)
+
+train_attributes <- subset(train, select = -c(logAppliances, RH_6, RH_7, RH_out) )
+test<-read.csv("../data/energy_data_test.csv")
+test_attributes <- subset(test, select = -c(lights, logAppliances,RH_6, RH_7, RH_out) )
+x = as.matrix(train_attributes)
+y_train = train$logAppliances
+x_test = as.matrix(test_attributes)
+y_test = test$logAppliances
+
+lambdas <- 10^seq(0, -3, by = -.05)
+cv_lasso <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas)
+optimal_lambda <- cv_lasso$lambda.min
+optimal_lambda
+plot(lambdas,cv_lasso$cvm,ylab="Mean-Squared Error",xlab="Lambda",  type="l")
+lasso_reg = glmnet(x, y_train, nlambda = 25, alpha = 1, family = 'gaussian', lambda = optimal_lambda,thresh = 1e-07)
+summary(lasso_reg)
+coef(lasso_reg)
+
+# Prediction and evaluation on train data
+predictions_train <- predict(lasso_reg, s = optimal_lambda, newx = x)
+res<-eval_results(y_train, predictions_train, train)
+print(res)
+
+# Prediction and evaluation on test data
+predictions_test <- predict(lasso_reg, s = optimal_lambda, newx = x_test)
+res<-eval_results(y_test, predictions_test, test)
+print(res)
+```
+
