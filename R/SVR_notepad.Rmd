@@ -1,0 +1,92 @@
+
+TWORZENIE MODELU REGRESJI RANDOM FOREST REGRESSION
+
+Wczytanie danych
+```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights) )
+train_attributes <- subset(train, select = -c(logAppliances) )
+test<-read.csv("../data/energy_data_test.csv")
+test_attributes <- subset(test, select = -c(lights, logAppliances) )
+logAppliances<-train$logAppliances
+train <- cbind(train_attributes, logAppliances)
+```
+
+SVR
+
+```{r}
+library(e1071)
+model = svm(logAppliances ~ ., data = train)
+print(model)
+```
+Predykcja modelu
+```{r}
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+return(data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+))}
+
+#treningowe dane
+y_pred_train = predict(model, newdata = train_attributes)
+res<-eval_results(train$logAppliances, y_pred_train, train)
+print(res)
+
+#testowe dane
+y_pred_test = predict(model, newdata = test_attributes)
+res<-eval_results(test$logAppliances,y_pred_test, test)
+print(res)
+```
+
+strojenie parametrów modelu
+
+```{r}
+hyper_grid <- expand.grid(
+  gamma       = seq(0.0, 0.3, by = 0.08),
+  epsilon     = seq(0.1, 0.9, by = 0.25),
+  cost        = seq(1,100,by=20),
+  RMSE   = 0
+)
+# total number of combinations
+nrow(hyper_grid)
+```
+```{r}
+library(Metrics)
+for(i in 1:nrow(hyper_grid)) {
+  
+  # train model
+  model <- svm(logAppliances ~ ., data = train, 
+               gamma = hyper_grid$gamma[i],
+               epsilon = hyper_grid$epsilon[i],
+               cost = hyper_grid$cost[i])
+  y_pred_train = predict(model, newdata = train_attributes)
+  hyper_grid$RMSE[i] <- rmse(y_pred_train,train$logAppliances)
+}
+```
+```{r}
+hyper_grid <- hyper_grid[order(hyper_grid$RMSE),] 
+print(hyper_grid)
+```
+
+```{r}
+  model <- svm(logAppliances ~ ., data = train, 
+               gamma = 0.25,
+               epsilon =0.1,
+               cost = 81)
+  y_pred_train = predict(model, newdata = train_attributes)
+  
+  #treningowe dane
+y_pred_train = predict(model, newdata = train_attributes)
+res<-eval_results(train$logAppliances, y_pred_train, train)
+print(res)
+
+#testowe dane
+y_pred_test = predict(model, newdata = test_attributes)
+res<-eval_results(test$logAppliances,y_pred_test, test)
+print(res)
+```
+
