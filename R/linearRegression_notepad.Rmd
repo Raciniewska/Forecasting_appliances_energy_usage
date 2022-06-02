@@ -5,10 +5,10 @@ https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 Wczytanie danych
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(lights) )
+train <- subset(train, select = -c(lights,X) )
 train_attributes <- subset(train, select = -c(logAppliances) )
 test<-read.csv("../data/energy_data_test.csv")
-test_attributes <- subset(test, select = -c(lights, logAppliances) )
+test_attributes <- subset(test, select = -c(lights, logAppliances,X) )
 test_y <- subset(test, select = c( logAppliances) )
 logAppliances<-train$logAppliances
 train <- cbind(train_attributes, logAppliances)
@@ -57,7 +57,7 @@ eval_metrics(model1, test_y, predictions)
 ```
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(lights,RH_6, RH_7, RH_9,RH_out))
+train <- subset(train, select = -c(lights,X,logT5, logVisibility, T1, RH_6, RH_3, RH_out))
 model2 <- lm(logAppliances~.,train,na.action=na.exclude)
 summary(model2)
 prediction<-predict(model2, newdata = test_attributes)
@@ -77,7 +77,7 @@ https://bookdown.org/ndphillips/YaRrr/comparing-regression-models-with-anova.htm
 
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(lights))
+train <- subset(train, select = -c(lights,X))
 library(corrplot)
 res <- cor( train, use = "complete.obs")
 res[is.na(res)] = 0
@@ -109,7 +109,21 @@ plot(seq( 1:(length(res_names))),p_val, xlab="number of predictor excluded from 
 
 
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(lights))
+train <- subset(train, select = -c(lights,X,RH_out, RH_6, T1, logT5, RH_3))
+model2 <- lm(logAppliances~.,train,na.action=na.exclude)
+summary(model2)
+prediction<-predict(model2, newdata = test_attributes)
+#residual plot
+res = resid(model2)
+plot(train$logAppliances, res, 
+    ylab="Residuals", xlab="Appliances Energy Usage")
+predictions = predict(model2, newdata = train_attributes)
+eval_metrics(model2, train$logAppliances, predictions)
+predictions = predict(model2, newdata = test_attributes)
+eval_metrics(model2, test_y, predictions)
+
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights,X))
 
 ```
 
@@ -141,21 +155,23 @@ https://www.scribbr.com/statistics/akaike-information-criterion/
 ```{r}
 library(Rcpp)
 library(AICcmodavg)
-indexes=c(2,6,11,13)
+indexes=c(3,6,7,12,24)
 com<-combn(indexes, 1,simplify=FALSE)
 com<-append(com,combn(indexes, 2,simplify=FALSE))
 com<-append(com,combn(indexes, 3,simplify=FALSE))
 com<-append(com,combn(indexes, 4,simplify=FALSE))
+com<-append(com,combn(indexes, 5,simplify=FALSE))
+models<-list()
 for(i in 1:length(com)){
     sub_train_attr <-as.data.frame(train[,(res_names)[-unlist(com[i])]])
     sub_train_attr <- cbind(sub_train_attr, logAppliances)
     models[[i]] <- lm(logAppliances~.,sub_train_attr,na.action=na.exclude)
 }
-aictab(cand.set = models, modnames =seq( 1:length(res_names)))
+aictab(cand.set = models,modnames =seq( 1:31))
 
 
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(lights,RH_6, RH_7, RH_out))
+train <- subset(train, select = -c(lights,RH_out, RH_6, T1, X,logT5))
 model2 <- lm(logAppliances~.,train,na.action=na.exclude)
 summary(model2)
 prediction<-predict(model2, newdata = test_attributes)
@@ -174,6 +190,7 @@ https://www.statology.org/bic-in-r/
 
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(lights,X)) 
 library(flexmix)
 bics=list()
 for(i in 1:length(com)){
