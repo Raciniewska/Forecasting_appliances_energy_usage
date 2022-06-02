@@ -5,6 +5,7 @@ Korzystamy z danych z poprzedniego etapu.
 
 ```{r}
 data <- read.csv(file = "../data/energy_data_after_analysis.csv", stringsAsFactors = FALSE)
+data <- subset(data, select = -c(X) )
 str(data)
 ```
 
@@ -23,22 +24,55 @@ data = na.omit(data)
 ```
 
 Mozemy zauwazyc ze atrybuty Appliances, visibility, windspeed, rh_out, t_dewpoint, t9, t3, t4, t5 maja rozklady nie bedace rozkladem normalnym.
-
-Atrybuty rv1, rv2, r6 wydaja sie byc atrybutami losowymi.
+Sprowadzenie do rozkładu normalnego przy pomocy Box-Cox
 
 ```{r}
 library(lubridate)
 library(corrplot)
 library(Hmisc)
+library(MASS)
 
-data$logAppliances = log(data$Appliances)
-#data$logVisibility = log(data$Visibility)
-#data$logWindspeed = log(data$Windspeed)
-#data$logRh_out=log(data$Tdewpoint)
-#data$logT9=log(data$T9)
-#data$logT3=log(data$T3)
-#data$logT4=log(data$T4)
-#data$logT5=log(data$T5)
+b<-boxcox(lm(data$Appliances ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logAppliances = (data$Appliances ^ lambda - 1) / lambda
+
+b<-boxcox(lm(data$Visibility ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logVisibility = (data$Visibility ^ lambda - 1) / lambda
+
+data$Windspeed <- rep(1e-5,length(data$Windspeed))+data$Windspeed
+b<-boxcox(lm(data$Windspeed ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logWindspeed = (data$Windspeed ^ lambda - 1) / lambda
+
+data$Tdewpoint <- rep(1e-5+abs(min(data$Tdewpoint)),length(data$Tdewpoint))+data$Tdewpoint
+b<-boxcox(lm(data$Tdewpoint ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logTdewpoint = (data$Tdewpoint ^ lambda - 1) / lambda
+
+b<-boxcox(lm(data$T9 ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logT9 = (data$T9 ^ lambda - 1) / lambda
+
+b<-boxcox(lm(data$T3 ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logT3 = (data$T3 ^ lambda - 1) / lambda
+
+b<-boxcox(lm(data$T4 ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logT4 = (data$T4 ^ lambda - 1) / lambda
+
+b<-boxcox(lm(data$T5 ~ 1))
+lambda <- b$x[which.max(b$y)]
+print(lambda)
+data$logT5 = (data$T5 ^ lambda - 1) / lambda
 
 ```
 
@@ -49,48 +83,31 @@ Dla nowo powstalych atrybutów zlogarytmowanych sprawdzamy korelacje z kolumna l
 
 res <- cor(data, use = "complete.obs")
 res[is.na(res)] = 0
-round(res, 2)
+res <- round(res, 2)
 corrplot(res, type = "full", order = "hclust",
          tl.col = "black")
 
+print(data.frame(res["logAppliances",]))
+
 ```
+
 
 Dokonujemy selekcji artybutów bazując na korelacji z logAppliances.
-Odpadają następujące kolumny: "date", "logRh_out", "logWindspeed","X","T3","T4","T5","T9","Tdewpoint","rv1","rv2","RH_5","RH_3","RH_4","Windspeed","Visibility","logVisibility","Appliances","logAppliances".
 
 ```{r}
+corr<-data.frame(res["logAppliances",])
+print(abs(corr)<=0.1)
 
-
-atributes <- data[,!names(data) %in% c("date", "logRh_out", "logWindspeed","X","T3","T4","T5","T9","Tdewpoint","rv1","rv2","RH_5","RH_3","RH_4","Windspeed","Visibility","logVisibility","Appliances","logAppliances")]
-str(atributes)
+atributes <- data[,!names(data) %in% c("Appliances","Tdewpoint","T5","T4","T3","T9","Rh_out","Windspeed","Visibility","rv1", "rv2")]
+# w ilu kolumnach brakuje danych
+colSums(is.na(atributes))
 ```
-
-Teraz bedziemy probowac znalezc dodatkowe atrybuty za pomoca tworzenia interakcji.
-
-```{r}
-
-atributes_with_interactions = model.matrix(~(lights+Press_mm_hg+RH_1+RH_2+RH_6+RH_7+RH_8+RH_9+RH_out+T_out+T1+T2+T6+T7+T8+hour+time_of_day)^2,atributes)
-corr_data = as.data.frame(atributes_with_interactions)
-corr_data$logAppliances = data$logAppliances
-library(lubridate)
-library(corrplot)
-res <- cor(corr_data, use = "complete.obs")
-res[is.na(res)] = 0
-round(res, 2)
-res = as.data.frame(res)
-res[abs(res$logAppliances) > 0.4] # nie istnieja korelacje wieksze od 0.4,
-```
-
 
 Analiza korelacji interakcji wskazuje ze nie sa one bardziej wartosciowe od artybutów. Dlatego algorytm boruta wykonujemy na atrybutach bez interakcji.
 
 ```{r}
-atributes = scale(atributes)
-boruta_atributes = as.data.frame(atributes)
-boruta_atributes$logAppliances = data$logAppliances
-boruta_atributes = as.data.frame(boruta_atributes)
+boruta_atributes = atributes
 str(boruta_atributes)
-#install.packages("Boruta")
 library(Boruta)
 
 set.seed(42)
@@ -118,7 +135,6 @@ Split into test and train data sets(80% - 20% split)
 
 ```{r}
 library(caret)
-atributes$logAppliances = data$logAppliances
 dt = sort(sample(nrow(atributes), nrow(atributes)*.8))
 train<-atributes[dt,]
 test<-atributes[-dt,]

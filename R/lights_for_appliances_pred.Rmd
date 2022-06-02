@@ -1,0 +1,211 @@
+
+TWORZENIE MODELU REGRESJI RANDOM FOREST REGRESSION
+
+Wczytanie danych
+```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train <- subset(train, select = -c(logAppliances) )
+train_attributes <- subset(train, select = -c(lights) )
+test<-read.csv("../data/energy_data_test.csv")
+test_attributes <- subset(test, select = -c(lights, logAppliances) )
+lights<-train$lights
+train <- cbind(train_attributes, lights)
+```
+
+RANDOM FOREST REGRESSION
+https://www.statology.org/random-forest-in-r/
+
+```{r}
+library(randomForest)
+set.seed(1)
+#fit the random forest model
+model <- randomForest(
+  formula = lights ~ .,
+  data = train
+)
+#display fitted model
+model
+```
+```{r}
+plot(model)
+#find number of trees that produce lowest test MSE
+which.min(model$mse)
+#find RMSE of best model
+sqrt(model$mse[which.min(model$mse)]) 
+varImpPlot(model, pch=19) 
+```
+Predykcja modelu
+```{r}
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+return(data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+))}
+
+#treningowe dane
+y_pred_train = predict(model, newdata = train_attributes)
+res<-eval_results(train$lights, y_pred_train, train)
+print(res)
+
+#testowe dane
+y_pred_test = predict(model, newdata = test_attributes)
+res<-eval_results(test$lights,y_pred_test, test)
+print(res)
+```
+
+strojenie parametrów modelu
+
+```{r}
+library(ranger)
+# hyperparameter grid search
+hyper_grid <- expand.grid(
+  mtry       = seq(3, 17, by = 2),
+  node_size  = seq(3, 9, by = 2),
+  replace = c(TRUE, FALSE),
+  ntry = seq(500,600,by=100),
+  OOB_RMSE   = 0
+)
+# total number of combinations
+nrow(hyper_grid)
+```
+Sprawdzenie kombinacji
+
+```{r}
+for(i in 1:nrow(hyper_grid)) {
+  
+  # train model
+  model <- ranger(
+    formula         = lights ~ ., 
+    data            = train, 
+    num.trees       = hyper_grid$ntry[i],
+    mtry            = hyper_grid$mtry[i],
+    min.node.size   = hyper_grid$node_size[i],
+    replace         = hyper_grid$replace[i],
+    seed            = 1
+  )
+  
+  # add OOB error to grid
+  hyper_grid$OOB_RMSE[i] <- sqrt(model$prediction.error)
+  print(i)
+}
+
+
+```
+
+```{r}
+hyper_grid <- hyper_grid[order(hyper_grid$OOB_RMSE),] 
+print(hyper_grid)
+```
+```{r}
+
+```
+
+Najlepszy model
+
+```{r}
+set.seed(1)
+library(randomForest)
+#fit the random forest model
+model <- randomForest(
+  formula = lights ~ .,
+  data = train,
+  replace=FALSE,
+  mtry=5,
+  ntree=600,
+  nodesize=3
+)
+#display fitted model
+model
+```
+Ocena modelu
+
+```{r}
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+return(data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+))}
+
+#treningowe dane
+y_pred_train = predict(model, newdata = train_attributes)
+res<-eval_results(train$lights, y_pred_train, train)
+print(res)
+
+#testowe dane
+y_pred_test = predict(model, newdata = test_attributes)
+res<-eval_results(test$lights,y_pred_test, test)
+print(res)
+```
+```{r}
+train<-read.csv("../data/energy_data_train.csv")
+train_attributes <- subset(train, select = -c(logAppliances, day_of_year) )
+test<-read.csv("../data/energy_data_test.csv")
+test_attributes <- subset(test, select = -c(lights, logAppliances,day_of_year) )
+test_attributes$lights <-y_pred_test 
+logAppliances<-train$logAppliances
+train <- cbind(train_attributes, logAppliances)
+
+hyper_grid <- expand.grid(
+  mtry       = seq(3, 17, by = 2),
+  node_size  = seq(3, 9, by = 2),
+  replace = c(TRUE, FALSE),
+  ntry = seq(500,600,by=100),
+  OOB_RMSE   = 0
+)
+for(i in 1:nrow(hyper_grid)) {
+  
+  # train model
+  model <- ranger(
+    formula         = logAppliances ~ ., 
+    data            = train, 
+    num.trees       = hyper_grid$ntry[i],
+    mtry            = hyper_grid$mtry[i],
+    min.node.size   = hyper_grid$node_size[i],
+    replace         = hyper_grid$replace[i],
+    seed            = 1
+  )
+  
+  # add OOB error to grid
+  hyper_grid$OOB_RMSE[i] <- sqrt(model$prediction.error)
+  print(i)
+}
+# total number of combinations
+nrow(hyper_grid)
+
+hyper_grid <- hyper_grid[order(hyper_grid$OOB_RMSE),] 
+print(hyper_grid)
+
+set.seed(1)
+library(randomForest)
+#fit the random forest model
+model <- randomForest(
+  formula = logAppliances ~ .,
+  data = train,
+  replace=TRUE,
+  mtry=3,
+  ntree=600,
+  nodesize=3
+)
+#display fitted model
+model
+
+#treningowe dane
+y_pred_train = predict(model, newdata = train_attributes)
+res<-eval_results(train$logAppliances, y_pred_train, train)
+print(res)
+
+#testowe dane
+y_pred_test = predict(model, newdata = test_attributes)
+res<-eval_results(test$logAppliances,y_pred_test, test)
+print(res)
+```
+```
+

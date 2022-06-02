@@ -2,7 +2,7 @@
 TYP DANYCH
 
 ```{r}
-data <- read.csv(file = "data/energydata_complete.csv", stringsAsFactors = FALSE)
+data <- read.csv(file = "C:/Users/rabar/Documents/zum/ZUM-2/Forecasting_appliances_energy_usage/data/energydata_complete.csv", stringsAsFactors = FALSE)
 data<-data[order(data$date),]
 str(data)
 ```
@@ -85,7 +85,7 @@ install.packages("lubridate")
 ```{r}
 library(lubridate)
 library(corrplot)
-hour<-hour(as.POSIXct(data[,1:1], format=c("%Y-%m-%d %H:%M:%S")))
+hour<-hour(as.POSIXct(data[,2:2], format=c("%Y-%m-%d %H:%M:%S")))
 data_numeric['hour']<-hour
 #pory dnia
 #22:00 - 6:00 noc 1
@@ -102,6 +102,8 @@ time_of_day[(hour>=12&hour<14)]=4
 time_of_day[(hour>=14&hour<18)]=5
 time_of_day[(hour>=18&hour<22)]=0
 data_numeric['time_of_day']<-time_of_day
+
+data_numeric['day_of_year']<- yday(as.POSIXct(data[,2:2], format=c("%Y-%m-%d %H:%M:%S")))
 res <- cor(data_numeric, use = "complete.obs")
 round(res, 2)
 corrplot(res, type = "full", order = "hclust", 
@@ -109,44 +111,9 @@ corrplot(res, type = "full", order = "hclust",
 ```
 
 
-Mozemy zauwazyc ze atrybuty Appliances, visibility, windspeed, rh_out, t_dewpoint, t9, t3, t4, t5 maja rozklady nie bedace rozkladem normalnym.
-
-Atrybuty rv1, rv2, r6 wydaja sie byc atrybutami losowymi.
-
-```{r}
-data$logAppliances = log(data$Appliances)
-data$logVisibility = log(data$Visibility)
-data$logWindspeed = log(data$Windspeed)
-data$logRh_out=log(data$Tdewpoint)
-data$logT9=log(data$T9)
-data$logT3=log(data$T3)
-data$logT4=log(data$T4)
-data$logT5=log(data$T5)
-str(data)
-data_numeric <- subset( data, select = -date )
-hist.data.frame(data_numeric[,1:14])
-hist.data.frame(data_numeric[,15:28])
-hist.data.frame(data_numeric[,29:36])
-```
 
 
-```{r}
-data_numeric$logAppliances = log(data$Appliances)
-data_numeric$logVisibility = log(data$Visibility)
-data_numeric$logWindspeed = log(data$Windspeed)
-data_numeric$logRh_out=log(data$Tdewpoint)
-data_numeric$logT9=log(data$T9)
-data_numeric$logT3=log(data$T3)
-data_numeric$logT4=log(data$T4)
-data_numeric$logT5=log(data$T5)
-data_numeric[is.na(data_numeric)] = 0
-res <- cor(data_numeric, use = "complete.obs")
-res[is.na(res)] = 0
 
-round(res, 2)
-corrplot(res, type = "full", order = "hclust",
-         tl.col = "black")
-```
 Save all numeric data to the new file
 
 ```{r}
