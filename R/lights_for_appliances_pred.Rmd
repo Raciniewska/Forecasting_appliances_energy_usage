@@ -4,10 +4,10 @@ TWORZENIE MODELU REGRESJI RANDOM FOREST REGRESSION
 Wczytanie danych
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train <- subset(train, select = -c(logAppliances) )
+train <- subset(train, select = -c(logAppliances,X) )
 train_attributes <- subset(train, select = -c(lights) )
 test<-read.csv("../data/energy_data_test.csv")
-test_attributes <- subset(test, select = -c(lights, logAppliances) )
+test_attributes <- subset(test, select = -c(lights, logAppliances, X) )
 lights<-train$lights
 train <- cbind(train_attributes, lights)
 ```
@@ -146,9 +146,9 @@ print(res)
 ```
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
-train_attributes <- subset(train, select = -c(logAppliances, day_of_year) )
+train_attributes <- subset(train, select = -c(logAppliances, X) )
 test<-read.csv("../data/energy_data_test.csv")
-test_attributes <- subset(test, select = -c(lights, logAppliances,day_of_year) )
+test_attributes <- subset(test, select = -c(lights, logAppliances,X) )
 test_attributes$lights <-y_pred_test 
 logAppliances<-train$logAppliances
 train <- cbind(train_attributes, logAppliances)
@@ -207,5 +207,13 @@ y_pred_test = predict(model, newdata = test_attributes)
 res<-eval_results(test$logAppliances,y_pred_test, test)
 print(res)
 ```
+
+```{r}
+plot(model)
+#find number of trees that produce lowest test MSE
+which.min(model$mse)
+#find RMSE of best model
+sqrt(model$mse[which.min(model$mse)]) 
+varImpPlot(model, pch=19) 
 ```
 
