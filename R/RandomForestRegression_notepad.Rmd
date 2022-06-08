@@ -13,7 +13,6 @@ train <- cbind(train_attributes, logAppliances)
 ```
 
 RANDOM FOREST REGRESSION
-https://www.statology.org/random-forest-in-r/
 
 ```{r}
 library(randomForest)
@@ -35,6 +34,7 @@ sqrt(model$mse[which.min(model$mse)])
 varImpPlot(model, pch=19) 
 ```
 Predykcja modelu
+
 ```{r}
 eval_results <- function(true, predicted, df) {
   SSE <- sum((predicted - true)^2)
@@ -100,9 +100,7 @@ for(i in 1:nrow(hyper_grid)) {
 hyper_grid <- hyper_grid[order(hyper_grid$OOB_RMSE),] 
 print(hyper_grid)
 ```
-```{r}
 
-```
 
 Najlepszy model
 

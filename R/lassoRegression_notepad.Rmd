@@ -13,7 +13,6 @@ train <- cbind(train_attributes, logAppliances)
 ```
 
 lasso regression - wszystkie kolumny, wyszukiwanie parametru lambda
-https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 
 ```{r}
 library(glmnet)
@@ -31,6 +30,7 @@ summary(lasso_reg)
 coef(lasso_reg)
 ```
 Ocena wyników modelu
+
 ```{r}
 eval_results <- function(true, predicted, df) {
   SSE <- sum((predicted - true)^2)
@@ -53,7 +53,8 @@ predictions_test <- predict(lasso_reg, s = optimal_lambda, newx = x_test)
 res<-eval_results(y_test, predictions_test, test)
 print(res)
 ```
-thresh find
+
+strojenie parametru'thresh'
 
 ```{r}
 thresh_vals = list(10^(-10),10^(-9),10^(-8),10^(-7),10^(-6), 10^(-5), 10^(-4), 10^(-3), 10^(-2), 10^(-1), 10^(-0))
@@ -81,6 +82,7 @@ plot(seq(-10,0,1) ,test_rsme ,pch=19, xlab="log10(thresh)", type="l")
 plot(seq(-10,0,1) ,train_rsme ,pch=19, xlab="log10(thresh)", type="l")
 ```
 Model bez RH_out, RH_6, T1, logT5
+
 ```{r}
 library(glmnet)
 

@@ -9,9 +9,7 @@ data <- subset(data, select = -c(X) )
 str(data)
 ```
 
-WARTOŚCI BRAKUJĄCE
-
-Uzupełniamy zerami ponieważ danych brakujacych jest tylko 6.
+WARTOŚCI BRAKUJĄCE - usunieie
 
 ```{r}
 # w ilu kolumnach brakuje danych
@@ -20,11 +18,8 @@ which(is.na(data))
 sum(is.na(data))
 mising<-data[is.na(data),]
 data = na.omit(data)
-#data[is.na(data)] = 0
 ```
-
-Mozemy zauwazyc ze atrybuty Appliances, visibility, windspeed, rh_out, t_dewpoint, t9, t3, t4, t5 maja rozklady nie bedace rozkladem normalnym.
-Sprowadzenie do rozkładu normalnego przy pomocy Box-Cox
+Sprowadzenie atrybutów których rozkład odbiega od rozkładu normalnego do rozkładu normalnego przy pomocy Box-Cox
 
 ```{r}
 library(lubridate)
@@ -103,7 +98,7 @@ atributes <- data[,!names(data) %in% c("Appliances","Tdewpoint","T5","T4","T3","
 colSums(is.na(atributes))
 ```
 
-Analiza korelacji interakcji wskazuje ze nie sa one bardziej wartosciowe od artybutów. Dlatego algorytm boruta wykonujemy na atrybutach bez interakcji.
+Algorytm Boruta do dalszej analizy przydatności atrybutóW.
 
 ```{r}
 boruta_atributes = atributes
@@ -131,7 +126,7 @@ axis(side = 1,las=2,labels = names(Labels), at = 1:ncol(final.train$ImpHistory),
 write.csv(atributes, '../data/energy_data_after_processing.csv')
 ```
 
-Split into test and train data sets(80% - 20% split)
+Stworzenie i zapisanie zbiorów testowych i treningowych
 
 ```{r}
 library(caret)
@@ -143,7 +138,6 @@ train<-predict(train_par,train)
 test<-predict(train_par,test)
 ```
 
-save test and train
 
 ```{r}
 write.csv(train, '../data/energy_data_train.csv')

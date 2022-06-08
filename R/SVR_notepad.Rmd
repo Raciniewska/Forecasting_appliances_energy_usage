@@ -1,5 +1,5 @@
 
-TWORZENIE MODELU REGRESJI RANDOM FOREST REGRESSION
+TWORZENIE MODELU SVR
 
 Wczytanie danych
 ```{r}
@@ -20,6 +20,7 @@ model = svm(logAppliances ~ ., data = train)
 print(model)
 ```
 Predykcja modelu
+
 ```{r}
 eval_results <- function(true, predicted, df) {
   SSE <- sum((predicted - true)^2)
@@ -71,6 +72,8 @@ for(i in 1:nrow(hyper_grid)) {
 hyper_grid <- hyper_grid[order(hyper_grid$RMSE),] 
 print(hyper_grid)
 ```
+
+Najlepszy model 
 
 ```{r}
   model <- svm(logAppliances ~ ., data = train, 

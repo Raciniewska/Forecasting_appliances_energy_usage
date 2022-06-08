@@ -1,6 +1,5 @@
 
 TWORZENIE MODELU REGRESJI LINIOWEJ
-https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 
 Wczytanie danych
 ```{r}
@@ -55,6 +54,8 @@ eval_metrics(model1, train$logAppliances, predictions)
 predictions = predict(model1, newdata = test_attributes)
 eval_metrics(model1, test_y, predictions)
 ```
+Model regresji bez wybranych atrybutów
+
 ```{r}
 train<-read.csv("../data/energy_data_train.csv")
 train <- subset(train, select = -c(lights,X,logT5, logVisibility, T1, RH_6, RH_3, RH_out))

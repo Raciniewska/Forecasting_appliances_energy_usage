@@ -109,11 +109,6 @@ round(res, 2)
 corrplot(res, type = "full", order = "hclust", 
          tl.col = "black")
 ```
-
-
-
-
-
 Save all numeric data to the new file
 
 ```{r}
