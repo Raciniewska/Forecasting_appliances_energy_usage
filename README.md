@@ -16,4 +16,4 @@ Folder R - kod źródłowy
 	-lassoRegression_notepad.Rmd kod źródłowy dla modelu regresji liniowej z regularyzacją L1
 	-SVR_notepad.Rmd kod źródłowy dla modelu SVR
 	-RandomForestRegression_notepad.Rmd kod źródłowy dla modelu regresji lasu losowego
-	-lights_for_appliances_pred.Rmd kod źródłowy dla modelu regresji lasu losowego z wykorzystanie przewidywanego atrybutu “lights”
+	-lights_for_appliances_pred.Rmd kod źródłowy dla modelu regresji lasu losowego z wykorzystanie przewidywanego atrybutu 		“lights”
